@@ -1,0 +1,52 @@
+# Development Docker Compose configuration
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=development-secret-key-minimum-32-characters-long-for-testing-purposes
+      - DATABASE_URL=sqlite:///./dev.db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - WHATSAPP_TOKEN=not_configured
+      - WHATSAPP_PHONE_ID=not_configured
+      - WHATSAPP_VERIFY_TOKEN=not_configured
+      - WHATSAPP_APP_SECRET=not_configured
+      - INSPECTOR_API_BASE_URL=https://api.inspector.com
+      - INSPECTOR_API_KEY=not_configured
+      - SMTP_USER=not_configured
+      - SMTP_PASSWORD=not_configured
+    volumes:
+      - ./logs:/app/logs
+      - ./dev.db:/app/dev.db
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis_data:

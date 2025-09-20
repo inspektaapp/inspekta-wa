@@ -1,0 +1,6 @@
+# Minimal requirements for initial testing
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv

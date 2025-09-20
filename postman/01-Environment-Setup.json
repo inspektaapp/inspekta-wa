@@ -1,0 +1,113 @@
+{
+  "info": {
+    "name": "Inspector WhatsApp Bot - Milestone 1.1",
+    "description": "Environment setup and health check endpoints testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "api_version",
+      "value": "/api/v1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}{{api_version}}/health/",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "health", ""]
+            },
+            "description": "Basic health check endpoint - should return 200 with status 'healthy'"
+          },
+          "response": []
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}{{api_version}}/health/detailed",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "health", "detailed"]
+            },
+            "description": "Detailed health check with service status and configuration information"
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}{{api_version}}/health/ready",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "health", "ready"]
+            },
+            "description": "Kubernetes-style readiness check - returns 200 when service is ready"
+          },
+          "response": []
+        },
+        {
+          "name": "Liveness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}{{api_version}}/health/live",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "health", "live"]
+            },
+            "description": "Kubernetes-style liveness check - returns 200 if application is alive"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "API Documentation",
+      "item": [
+        {
+          "name": "OpenAPI Schema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}{{api_version}}/openapi.json",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "openapi.json"]
+            },
+            "description": "Get OpenAPI schema for the API"
+          },
+          "response": []
+        },
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/docs",
+              "host": ["{{base_url}}"],
+              "path": ["docs"]
+            },
+            "description": "Access Swagger UI documentation"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
