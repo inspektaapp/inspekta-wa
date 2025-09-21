@@ -1,6 +1,4 @@
 # Development Docker Compose configuration
-version: '3.8'
-
 services:
   app:
     build:
@@ -14,14 +12,14 @@ services:
       - DATABASE_URL=sqlite:///./dev.db
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - WHATSAPP_TOKEN=not_configured
-      - WHATSAPP_PHONE_ID=not_configured
-      - WHATSAPP_VERIFY_TOKEN=not_configured
-      - WHATSAPP_APP_SECRET=not_configured
+      - WHATSAPP_TOKEN=test_token_placeholder
+      - WHATSAPP_PHONE_ID=test_phone_id_placeholder
+      - WHATSAPP_VERIFY_TOKEN=test_verify_token_placeholder
+      - WHATSAPP_APP_SECRET=test_app_secret_placeholder
       - INSPECTOR_API_BASE_URL=https://api.inspector.com
-      - INSPECTOR_API_KEY=not_configured
-      - SMTP_USER=not_configured
-      - SMTP_PASSWORD=not_configured
+      - INSPECTOR_API_KEY=test_inspector_api_key_placeholder
+      - SMTP_USER=test@example.com
+      - SMTP_PASSWORD=test_password
     volumes:
       - ./logs:/app/logs
       - ./dev.db:/app/dev.db

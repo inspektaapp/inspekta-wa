@@ -1,0 +1,15 @@
+# Docker-optimized requirements for Inspector WhatsApp Bot
+# Core FastAPI dependencies
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+
+# Configuration and validation
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# HTTP client for external APIs
+httpx>=0.25.0
+
+# Production server
+gunicorn>=21.0.0

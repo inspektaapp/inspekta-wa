@@ -61,7 +61,6 @@ htmlcov/
 .cache
 
 # Docker
-Dockerfile*
 docker-compose*.yml
 .dockerignore
 
@@ -71,8 +70,11 @@ docs/
 
 # Development files
 .env.example
-requirements-minimal.txt
 postman/
+
+# Keep production requirements files
+!requirements-docker.txt
+!requirements-core.txt
 
 # SQLite databases (for development)
 *.db

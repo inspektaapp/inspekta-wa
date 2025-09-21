@@ -1,25 +1,30 @@
 # Inspector WhatsApp Integration - Implementation Roadmap
 
 ## **Project Overview**
+
 Building a WhatsApp bot integration for the Inspector real estate platform using PyWa framework + FastAPI, with Celery/Redis for async processing.
 
 ## **Architecture Stack**
+
 - **Framework**: FastAPI (async) + PyWa (WhatsApp Cloud API)
 - **Database**: PostgreSQL (reuse Inspector's existing DB)
 - **Queue**: Celery + Redis (async jobs, notifications)
 - **Authentication**: JWT + OTP (extend Inspector's auth)
-- **Deployment**: Docker + containerization
+- **Deployment**: Docker + containerization ✅ **COMPLETED**
 
 ---
 
 ## **Phase 1: Foundation & Core Setup (Week 1-2)**
 
 ### **Milestone 1.1: Project Structure & Environment Setup**
+
 **Duration**: 2 days
 **Goal**: Get development environment running with basic FastAPI + PyWa integration
 
 #### **Tasks:**
+
 1. **Project Structure Setup**
+
    ```
    inspakta-wa/
    ├── app/
@@ -69,8 +74,8 @@ Building a WhatsApp bot integration for the Inspector real estate platform using
    ├── .env.example
    └── README.md
    ```
-
 2. **Environment Configuration**
+
    ```python
    # .env.example
    # FastAPI
@@ -100,8 +105,8 @@ Building a WhatsApp bot integration for the Inspector real estate platform using
    ALGORITHM=HS256
    ACCESS_TOKEN_EXPIRE_MINUTES=30
    ```
-
 3. **Dependencies Setup**
+
    ```python
    # requirements.txt
    fastapi==0.104.1
@@ -123,23 +128,28 @@ Building a WhatsApp bot integration for the Inspector real estate platform using
    ```
 
 #### **Testing Milestone 1.1:**
+
 - [ ] FastAPI server starts successfully
 - [ ] Health check endpoint responds
 - [ ] Environment variables load correctly
-- [ ] PyWa imports without errors
+- [X] PyWa imports without errors
 
 **Postman Collection**: `01-Environment-Setup.json`
+
 - GET `/health` - Server health check
 - GET `/api/v1/status` - API status
 
 ---
 
 ### **Milestone 1.2: WhatsApp Webhook Foundation**
+
 **Duration**: 3 days
 **Goal**: Establish secure WhatsApp webhook handling with verification
 
 #### **Tasks:**
+
 1. **Webhook Verification Setup**
+
    ```python
    # app/api/v1/endpoints/webhooks.py
    from fastapi import APIRouter, HTTPException, Query, Request
@@ -164,8 +174,8 @@ Building a WhatsApp bot integration for the Inspector real estate platform using
        # Implementation will be added in next milestone
        pass
    ```
-
 2. **PyWa Integration Setup**
+
    ```python
    # app/services/whatsapp_service.py
    from pywa import WhatsApp
@@ -189,8 +199,8 @@ Building a WhatsApp bot integration for the Inspector real estate platform using
            """Send message with buttons"""
            return self.wa.send_message(to=to, text=text, buttons=buttons)
    ```
-
 3. **Basic Message Handler Structure**
+
    ```python
    # app/core/message_handler.py
    from pywa.types import Message
@@ -218,16 +228,19 @@ Building a WhatsApp bot integration for the Inspector real estate platform using
    ```
 
 #### **Testing Milestone 1.2:**
+
 - [ ] Webhook verification passes Meta's validation
 - [ ] Webhook can receive POST requests
 - [ ] PyWa client initializes correctly
 - [ ] Can send test message to WhatsApp
 
 **Postman Collection**: `02-Webhook-Setup.json`
+
 - GET `/api/v1/webhook?hub.mode=subscribe&hub.challenge=123&hub.verify_token=TOKEN`
 - POST `/api/v1/webhook` (with sample WhatsApp payload)
 
 **Test Commands:**
+
 ```bash
 # Test webhook verification
 curl "http://localhost:8000/api/v1/webhook?hub.mode=subscribe&hub.challenge=123&hub.verify_token=your_token"
@@ -243,11 +256,14 @@ wa.send_message('1234567890', 'Hello from Inspector Bot!')
 ---
 
 ### **Milestone 1.3: Database Integration & User Models**
+
 **Duration**: 2 days
 **Goal**: Set up database models for WhatsApp users and link to Inspector accounts
 
 #### **Tasks:**
+
 1. **Database Models**
+
    ```python
    # app/models/user.py
    from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
@@ -291,8 +307,8 @@ wa.send_message('1234567890', 'Hello from Inspector Bot!')
        verified = Column(Boolean, default=False)
        created_at = Column(DateTime, default=datetime.utcnow)
    ```
-
 2. **Database Connection & Alembic Setup**
+
    ```python
    # app/core/database.py
    from sqlalchemy import create_engine
@@ -310,8 +326,8 @@ wa.send_message('1234567890', 'Hello from Inspector Bot!')
        finally:
            db.close()
    ```
-
 3. **Alembic Migration Setup**
+
    ```bash
    alembic init alembic
    alembic revision --autogenerate -m "Initial WhatsApp tables"
@@ -319,12 +335,14 @@ wa.send_message('1234567890', 'Hello from Inspector Bot!')
    ```
 
 #### **Testing Milestone 1.3:**
+
 - [ ] Database connection established
 - [ ] Tables created successfully
 - [ ] Can insert/query WhatsApp users
 - [ ] Alembic migrations work
 
 **Test Commands:**
+
 ```python
 # Test database operations
 from app.models.user import WhatsAppUser
@@ -342,11 +360,14 @@ print(f"Created user: {user.id}")
 ## **Phase 2: Authentication & User Linking (Week 3-4)**
 
 ### **Milestone 2.1: OTP-Based Account Linking**
+
 **Duration**: 4 days
 **Goal**: Implement secure phone-to-Inspector account linking via OTP
 
 #### **Tasks:**
+
 1. **OTP Service Implementation**
+
    ```python
    # app/services/auth_service.py
    import random
@@ -424,8 +445,8 @@ print(f"Created user: {user.id}")
            """Generate 6-digit OTP"""
            return ''.join(random.choices(string.digits, k=6))
    ```
-
 2. **WhatsApp Authentication Flow**
+
    ```python
    # app/core/message_handler.py (updated)
    class MessageHandler:
@@ -517,16 +538,19 @@ print(f"Created user: {user.id}")
    ```
 
 #### **Testing Milestone 2.1:**
+
 - [ ] OTP generation and email sending works
 - [ ] OTP verification links accounts correctly
 - [ ] Authentication flow handles errors gracefully
 - [ ] Role-based welcome messages display
 
 **Postman Collection**: `03-Authentication.json`
+
 - POST `/api/v1/auth/initiate-linking` - Start linking process
 - POST `/api/v1/auth/verify-otp` - Verify OTP code
 
 **WhatsApp Test Flow:**
+
 1. Send: `/link test@inspector.com`
 2. Check email for OTP
 3. Send: `123456` (OTP code)
@@ -535,11 +559,14 @@ print(f"Created user: {user.id}")
 ---
 
 ### **Milestone 2.2: Role-Based Menu System**
+
 **Duration**: 3 days
 **Goal**: Implement interactive menu system for each user role
 
 #### **Tasks:**
+
 1. **Menu Definition & Management**
+
    ```python
    # app/services/menu_service.py
    from pywa.types import CallbackButton
@@ -590,8 +617,8 @@ print(f"Created user: {user.id}")
                CallbackButton("🔙 Back", callback_data="seeker_browse")
            ]
    ```
-
 2. **Button Handler Implementation**
+
    ```python
    # app/core/button_handler.py
    from pywa.types import CallbackButton, Message
@@ -744,12 +771,14 @@ print(f"Created user: {user.id}")
    ```
 
 #### **Testing Milestone 2.2:**
+
 - [ ] Role-specific menus display correctly
 - [ ] Button clicks route to appropriate handlers
 - [ ] Properties/inspections display from Inspector API
 - [ ] Navigation between menus works smoothly
 
 **WhatsApp Test Scenarios:**
+
 1. Link as agent → Test property management menu
 2. Link as seeker → Test property browsing
 3. Link as inspector → Test inspection management
@@ -760,11 +789,14 @@ print(f"Created user: {user.id}")
 ## **Phase 3: Core Business Logic (Week 5-6)**
 
 ### **Milestone 3.1: Property & Inspection Management**
+
 **Duration**: 5 days
 **Goal**: Implement core property browsing, inspection booking, and management features
 
 #### **Tasks:**
+
 1. **Inspector API Service Integration**
+
    ```python
    # app/services/inspector_api.py
    import httpx
@@ -843,8 +875,8 @@ print(f"Created user: {user.id}")
            response = await self.client.patch(f"/inspections/{inspection_id}", json=data)
            return response.json()
    ```
-
 2. **Enhanced Button Handlers for Business Logic**
+
    ```python
    # app/core/button_handler.py (extended)
 
@@ -988,6 +1020,7 @@ print(f"Created user: {user.id}")
    ```
 
 #### **Testing Milestone 3.1:**
+
 - [ ] Property browsing shows real data from Inspector API
 - [ ] Inspection booking flow works end-to-end
 - [ ] Agent can view their properties and inquiries
@@ -995,6 +1028,7 @@ print(f"Created user: {user.id}")
 - [ ] Booking confirmations are sent correctly
 
 **Integration Tests:**
+
 ```python
 # Test property browsing
 await button_handler._handle_seeker_browse(mock_message, mock_wa_user)
@@ -1009,11 +1043,14 @@ await button_handler._handle_confirm_booking(mock_message, mock_wa_user, 123, 45
 ---
 
 ### **Milestone 3.2: Celery Background Tasks & Notifications**
+
 **Duration**: 3 days
 **Goal**: Implement async job processing for notifications and reminders
 
 #### **Tasks:**
+
 1. **Celery Configuration**
+
    ```python
    # app/workers/celery_app.py
    from celery import Celery
@@ -1044,8 +1081,8 @@ await button_handler._handle_confirm_booking(mock_message, mock_wa_user, 123, 45
        },
    )
    ```
-
 2. **Background Tasks Implementation**
+
    ```python
    # app/workers/tasks.py
    from celery import current_task
@@ -1199,8 +1236,8 @@ await button_handler._handle_confirm_booking(mock_message, mock_wa_user, 123, 45
            buttons=buttons
        )
    ```
-
 3. **Notification Service**
+
    ```python
    # app/services/notification_service.py
    from sqlalchemy.orm import Session
@@ -1230,6 +1267,7 @@ await button_handler._handle_confirm_booking(mock_message, mock_wa_user, 123, 45
    ```
 
 #### **Testing Milestone 3.2:**
+
 - [ ] Celery workers start successfully
 - [ ] Inspection reminders are scheduled and sent
 - [ ] Daily reminder task processes all inspections
@@ -1237,6 +1275,7 @@ await button_handler._handle_confirm_booking(mock_message, mock_wa_user, 123, 45
 - [ ] Task retries work on failures
 
 **Test Commands:**
+
 ```bash
 # Start Celery worker
 celery -A app.workers.celery_app worker --loglevel=info
@@ -1257,11 +1296,14 @@ print(result.get())
 ## **Phase 4: Production Readiness (Week 7-8)**
 
 ### **Milestone 4.1: Error Handling, Logging & Monitoring**
+
 **Duration**: 3 days
 **Goal**: Implement comprehensive error handling, logging, and monitoring
 
 #### **Tasks:**
+
 1. **Centralized Error Handling**
+
    ```python
    # app/core/exceptions.py
    from fastapi import HTTPException
@@ -1304,8 +1346,8 @@ print(result.get())
            content={"detail": "WhatsApp service error", "type": "whatsapp_error"}
        )
    ```
-
 2. **Comprehensive Logging Setup**
+
    ```python
    # app/core/logging_config.py
    import logging
@@ -1370,8 +1412,8 @@ print(result.get())
        whatsapp_logger.addHandler(whatsapp_handler)
        whatsapp_logger.setLevel(logging.INFO)
    ```
-
 3. **Enhanced Message Handler with Error Handling**
+
    ```python
    # app/core/message_handler.py (enhanced)
    import logging
@@ -1460,6 +1502,7 @@ print(result.get())
    ```
 
 #### **Testing Milestone 4.1:**
+
 - [ ] Error handlers catch and log exceptions appropriately
 - [ ] Different log levels are written to correct files
 - [ ] Admin alerts are triggered for critical errors
@@ -1467,6 +1510,7 @@ print(result.get())
 - [ ] Logs contain sufficient debugging information
 
 **Test Error Scenarios:**
+
 ```python
 # Test OTP expiration
 # Test Inspector API failure
@@ -1478,11 +1522,14 @@ print(result.get())
 ---
 
 ### **Milestone 4.2: Security Hardening & Validation**
+
 **Duration**: 2 days
 **Goal**: Implement security best practices and input validation
 
 #### **Tasks:**
+
 1. **Webhook Security Implementation**
+
    ```python
    # app/core/security.py
    import hmac
@@ -1530,8 +1577,8 @@ print(result.get())
 
        return sanitized
    ```
-
 2. **Rate Limiting Implementation**
+
    ```python
    # app/core/rate_limiter.py
    import time
@@ -1595,8 +1642,8 @@ print(result.get())
            )
            return allowed
    ```
-
 3. **Input Validation Schemas**
+
    ```python
    # app/schemas/validation.py
    from pydantic import BaseModel, validator
@@ -1645,6 +1692,7 @@ print(result.get())
    ```
 
 #### **Testing Milestone 4.2:**
+
 - [ ] Webhook signature verification works correctly
 - [ ] Rate limiting prevents abuse
 - [ ] Input validation rejects malformed data
@@ -1652,6 +1700,7 @@ print(result.get())
 - [ ] Security headers are set appropriately
 
 **Security Test Scenarios:**
+
 ```bash
 # Test webhook signature verification
 curl -X POST http://localhost:8000/api/v1/webhook \
@@ -1667,11 +1716,14 @@ done
 ---
 
 ### **Milestone 4.3: Docker Deployment & Documentation**
+
 **Duration**: 3 days
 **Goal**: Containerize application and create deployment documentation
 
 #### **Tasks:**
+
 1. **Dockerfile & Docker Compose**
+
    ```dockerfile
    # Dockerfile
    FROM python:3.11-slim
@@ -1785,8 +1837,8 @@ done
      postgres_data:
      redis_data:
    ```
-
 2. **Production Deployment Guide**
+
    ```markdown
    # DEPLOYMENT.md
 
@@ -1809,12 +1861,14 @@ done
    ```
 
    2. **Configure Environment**
+
    ```bash
    cp .env.example .env
    # Edit .env with production values
    ```
 
    3. **Required Environment Variables**
+
    ```bash
    # WhatsApp Configuration
    WHATSAPP_TOKEN=your_permanent_token
@@ -1839,17 +1893,21 @@ done
 
    ### Deployment Steps
 
+
    1. **Build and Start Services**
+
    ```bash
    docker-compose up -d
    ```
 
    2. **Run Database Migrations**
+
    ```bash
    docker-compose exec app alembic upgrade head
    ```
 
    3. **Verify Health**
+
    ```bash
    curl http://your-domain.com/health
    ```
@@ -1857,6 +1915,7 @@ done
    ### WhatsApp Webhook Configuration
 
    1. **Set Webhook URL**
+
    ```bash
    curl -X POST "https://graph.facebook.com/v18.0/{phone-number-id}/webhooks" \
      -H "Authorization: Bearer {access-token}" \
@@ -1868,6 +1927,7 @@ done
    ```
 
    2. **Subscribe to Webhook Fields**
+
    ```bash
    curl -X POST "https://graph.facebook.com/v18.0/{whatsapp-business-account-id}/subscriptions" \
      -H "Authorization: Bearer {access-token}" \
@@ -1883,18 +1943,21 @@ done
    ### Monitoring & Maintenance
 
    1. **View Logs**
+
    ```bash
    docker-compose logs -f app
    docker-compose logs -f celery-worker
    ```
 
    2. **Health Checks**
+
    ```bash
    curl http://your-domain.com/health
    curl http://your-domain.com/api/v1/status
    ```
 
    3. **Scaling Workers**
+
    ```bash
    docker-compose up -d --scale celery-worker=3
    ```
@@ -1902,17 +1965,22 @@ done
    ### Backup & Recovery
 
    1. **Database Backup**
+
    ```bash
    docker-compose exec db pg_dump -U postgres inspakta_wa > backup.sql
    ```
 
    2. **Redis Backup**
+
    ```bash
    docker-compose exec redis redis-cli BGSAVE
    ```
+
    ```
 
+   ```
 3. **API Documentation Updates**
+
    ```python
    # app/main.py (enhanced)
    from fastapi import FastAPI
@@ -1968,6 +2036,7 @@ done
    ```
 
 #### **Testing Milestone 4.3:**
+
 - [ ] Docker containers build and start successfully
 - [ ] All services communicate correctly in Docker environment
 - [ ] Health checks pass in containerized setup
@@ -1975,6 +2044,7 @@ done
 - [ ] API documentation is comprehensive and accurate
 
 **Deployment Verification:**
+
 ```bash
 # Test complete deployment
 docker-compose up -d
@@ -1990,32 +2060,33 @@ curl http://localhost:8000/docs
 ### **End-to-End Testing Scenarios**
 
 1. **New User Onboarding**
+
    - [ ] User sends first message to bot
    - [ ] Linking flow works with valid email
    - [ ] OTP sent and verified successfully
    - [ ] Role-based welcome message displays
    - [ ] Main menu functions correctly
-
 2. **Seeker User Journey**
+
    - [ ] Browse available properties
    - [ ] View property details
    - [ ] Book inspection slot
    - [ ] Receive booking confirmation
    - [ ] Get 24-hour reminder
    - [ ] View booking history
-
 3. **Agent User Journey**
+
    - [ ] View property listings
    - [ ] See inspection inquiries
    - [ ] Set availability status
    - [ ] Receive booking notifications
-
 4. **Inspector User Journey**
+
    - [ ] View assigned inspections
    - [ ] Update inspection status
    - [ ] Confirm completions
-
 5. **Error Handling**
+
    - [ ] Invalid OTP attempts
    - [ ] Expired OTP handling
    - [ ] Inspector API failures
@@ -2049,23 +2120,28 @@ curl http://localhost:8000/docs
 ## **Postman Collections Structure**
 
 ### **Collection 1: Environment Setup**
+
 - GET `/health` - Basic health check
 - GET `/api/v1/status` - API status and version
 
 ### **Collection 2: Webhook Testing**
+
 - GET `/api/v1/webhook` - Webhook verification
 - POST `/api/v1/webhook` - Message webhook (with signatures)
 
 ### **Collection 3: Authentication Flow**
+
 - POST `/api/v1/auth/initiate-linking` - Start linking
 - POST `/api/v1/auth/verify-otp` - Complete linking
 
 ### **Collection 4: Inspector API Integration**
+
 - GET `/api/v1/properties` - Property listings
 - GET `/api/v1/inspections/{user_id}` - User inspections
 - POST `/api/v1/inspections` - Book inspection
 
 ### **Collection 5: Admin & Monitoring**
+
 - GET `/api/v1/metrics` - Application metrics
 - GET `/api/v1/users/stats` - User statistics
 - POST `/api/v1/admin/broadcast` - Admin broadcast message

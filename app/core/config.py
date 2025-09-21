@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     WHATSAPP_PHONE_ID: str = "not_configured"
     WHATSAPP_VERIFY_TOKEN: str = "not_configured"
     WHATSAPP_APP_SECRET: str = "not_configured"
+    TEST_NUMBER: str = "not_configured"
 
     # Database Settings (optional for development)
     DATABASE_URL: str = "sqlite:///./dev.db"
