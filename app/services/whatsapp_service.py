@@ -39,9 +39,9 @@ class WhatsAppService:
             logger.error(f"Failed to initialize WhatsApp client: {e}")
             self.client = None
 
-    def handle_text_message(self, message_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_text_message(self, message_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Handle incoming text messages
+        Handle incoming text messages with property search functionality
 
         Args:
             message_data: WhatsApp message data from webhook
@@ -54,22 +54,48 @@ class WhatsAppService:
             message_text = self._extract_message_text(message_data)
             sender_id = self._extract_sender_id(message_data)
             message_id = self._extract_message_id(message_data)
+            timestamp = self._extract_timestamp(message_data)
+            sender_name = self._extract_sender_name(message_data)
 
-            logger.info(f"Handling text message from {sender_id}: {message_text}")
+            # Log detailed message info
+            logger.info(f"📱 INCOMING MESSAGE:")
+            logger.info(f"   From: {sender_id} ({sender_name})")
+            logger.info(f"   Message ID: {message_id}")
+            logger.info(f"   Timestamp: {timestamp}")
+            logger.info(f"   Text: '{message_text}'")
 
-            # Simple echo response for now
+            # Process the message based on content
+            response_text = await self._process_message_content(message_text, sender_id, sender_name)
+
             response = {
                 "type": "text_response",
                 "recipient": sender_id,
-                "message": f"Echo: {message_text}",
-                "original_message_id": message_id
+                "message": response_text,
+                "original_message_id": message_id,
+                "sender_info": {
+                    "id": sender_id,
+                    "name": sender_name,
+                    "timestamp": timestamp
+                }
             }
+
+            # Try to send the response immediately
+            try:
+                send_result = self.send_message(sender_id, response_text, "property_search")
+                if send_result.get("success"):
+                    logger.info(f"✅ Property search response sent successfully to {sender_id}")
+                    logger.info(f"   Message ID: {send_result.get('message_id')}")
+                else:
+                    logger.error(f"❌ Failed to send response: {send_result.get('error')}")
+            except Exception as e:
+                logger.error(f"❌ Exception sending response: {e}")
 
             return response
 
         except Exception as e:
-            logger.error(f"Error handling text message: {e}")
-            return {"type": "error", "message": "Failed to process message"}
+            logger.error(f"❌ Error handling text message: {e}")
+            logger.error(f"Raw message data: {message_data}")
+            return {"type": "error", "message": f"Failed to process message: {str(e)}"}
 
     def handle_button_callback(self, callback_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -94,34 +120,216 @@ class WhatsAppService:
             logger.error(f"Error handling button callback: {e}")
             return {"type": "error", "message": "Failed to process callback"}
 
-    def send_message(self, recipient: str, message: str) -> bool:
+    def send_message(self, recipient: str, message: str, message_type: str = "text") -> Dict[str, Any]:
         """
-        Send a text message to a recipient
+        Send a message to a recipient using WhatsApp Cloud API
 
         Args:
             recipient: Phone number or WhatsApp ID
             message: Message text to send
+            message_type: Type of message (text, template, etc.)
 
         Returns:
-            True if sent successfully, False otherwise
+            Response dictionary with success status and details
         """
         try:
-            if not self.client:
-                logger.warning("Cannot send message - WhatsApp client not initialized")
-                return False
+            import httpx
+            from app.core.config import settings
 
-            # Send message using PyWa client
-            self.client.send_message(
-                to=recipient,
-                text=message
-            )
+            # Use direct API call instead of PyWa client for more reliability
+            url = f"https://graph.facebook.com/v20.0/{settings.WHATSAPP_PHONE_ID}/messages"
 
-            logger.info(f"Message sent to {recipient}: {message}")
-            return True
+            headers = {
+                "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                "Content-Type": "application/json"
+            }
+
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": recipient,
+                "type": "text",
+                "text": {
+                    "body": message
+                }
+            }
+
+            logger.info(f"📤 Sending {message_type} message via API to {recipient}")
+            logger.info(f"   URL: {url}")
+            logger.info(f"   Message: {message[:100]}...")
+
+            with httpx.Client() as client:
+                response = client.post(url, json=payload, headers=headers, timeout=30)
+
+                if response.status_code == 200:
+                    response_data = response.json()
+                    logger.info(f"✅ Message sent successfully to {recipient}")
+                    logger.info(f"   Response: {response_data}")
+                    return {
+                        "success": True,
+                        "message_id": response_data.get("messages", [{}])[0].get("id"),
+                        "recipient": recipient,
+                        "response": response_data
+                    }
+                else:
+                    logger.error(f"❌ Failed to send message. Status: {response.status_code}")
+                    logger.error(f"   Response: {response.text}")
+                    return {
+                        "success": False,
+                        "error": response.text,
+                        "status_code": response.status_code,
+                        "recipient": recipient
+                    }
 
         except Exception as e:
-            logger.error(f"Failed to send message to {recipient}: {e}")
-            return False
+            logger.error(f"❌ Exception sending message to {recipient}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "recipient": recipient
+            }
+
+    def send_template_message(self, recipient: str, template_name: str, language: str = "en_US",
+                            components: list = None) -> Dict[str, Any]:
+        """
+        Send a template message to a recipient
+
+        Args:
+            recipient: Phone number or WhatsApp ID
+            template_name: Name of the approved template
+            language: Language code (default: en_US)
+            components: Template components/parameters
+
+        Returns:
+            Response dictionary with success status and details
+        """
+        try:
+            import httpx
+            from app.core.config import settings
+
+            url = f"https://graph.facebook.com/v20.0/{settings.WHATSAPP_PHONE_ID}/messages"
+
+            headers = {
+                "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                "Content-Type": "application/json"
+            }
+
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": recipient,
+                "type": "template",
+                "template": {
+                    "name": template_name,
+                    "language": {
+                        "code": language
+                    }
+                }
+            }
+
+            if components:
+                payload["template"]["components"] = components
+
+            logger.info(f"📤 Sending template '{template_name}' to {recipient}")
+
+            with httpx.Client() as client:
+                response = client.post(url, json=payload, headers=headers, timeout=30)
+
+                if response.status_code == 200:
+                    response_data = response.json()
+                    logger.info(f"✅ Template message sent successfully to {recipient}")
+                    return {
+                        "success": True,
+                        "message_id": response_data.get("messages", [{}])[0].get("id"),
+                        "recipient": recipient,
+                        "template": template_name,
+                        "response": response_data
+                    }
+                else:
+                    logger.error(f"❌ Failed to send template. Status: {response.status_code}")
+                    logger.error(f"   Response: {response.text}")
+                    return {
+                        "success": False,
+                        "error": response.text,
+                        "status_code": response.status_code,
+                        "recipient": recipient
+                    }
+
+        except Exception as e:
+            logger.error(f"❌ Exception sending template to {recipient}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "recipient": recipient
+            }
+
+    def send_interactive_message(self, recipient: str, message_text: str, buttons: list) -> Dict[str, Any]:
+        """
+        Send an interactive message with buttons
+
+        Args:
+            recipient: Phone number or WhatsApp ID
+            message_text: Text content of the message
+            buttons: List of button objects
+
+        Returns:
+            Response dictionary with success status and details
+        """
+        try:
+            import httpx
+            from app.core.config import settings
+
+            url = f"https://graph.facebook.com/v20.0/{settings.WHATSAPP_PHONE_ID}/messages"
+
+            headers = {
+                "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+                "Content-Type": "application/json"
+            }
+
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": recipient,
+                "type": "interactive",
+                "interactive": {
+                    "type": "button",
+                    "body": {
+                        "text": message_text
+                    },
+                    "action": {
+                        "buttons": buttons
+                    }
+                }
+            }
+
+            logger.info(f"📤 Sending interactive message to {recipient}")
+
+            with httpx.Client() as client:
+                response = client.post(url, json=payload, headers=headers, timeout=30)
+
+                if response.status_code == 200:
+                    response_data = response.json()
+                    logger.info(f"✅ Interactive message sent successfully to {recipient}")
+                    return {
+                        "success": True,
+                        "message_id": response_data.get("messages", [{}])[0].get("id"),
+                        "recipient": recipient,
+                        "response": response_data
+                    }
+                else:
+                    logger.error(f"❌ Failed to send interactive message. Status: {response.status_code}")
+                    logger.error(f"   Response: {response.text}")
+                    return {
+                        "success": False,
+                        "error": response.text,
+                        "status_code": response.status_code,
+                        "recipient": recipient
+                    }
+
+        except Exception as e:
+            logger.error(f"❌ Exception sending interactive message to {recipient}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "recipient": recipient
+            }
 
     def _extract_message_text(self, data: Dict[str, Any]) -> str:
         """Extract message text from webhook data"""
@@ -147,6 +355,56 @@ class WhatsAppService:
         except (IndexError, KeyError) as e:
             logger.warning(f"Could not extract message ID: {e}")
             return ""
+
+    def _extract_timestamp(self, data: Dict[str, Any]) -> str:
+        """Extract timestamp from webhook data"""
+        try:
+            timestamp = data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("messages", [{}])[0].get("timestamp", "")
+            if timestamp:
+                import datetime
+                return datetime.datetime.fromtimestamp(int(timestamp)).strftime("%Y-%m-%d %H:%M:%S")
+            return ""
+        except (IndexError, KeyError, ValueError) as e:
+            logger.warning(f"Could not extract timestamp: {e}")
+            return ""
+
+    def _extract_sender_name(self, data: Dict[str, Any]) -> str:
+        """Extract sender name from webhook data"""
+        try:
+            # WhatsApp doesn't always provide name in webhook, but we can try
+            contacts = data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("contacts", [])
+            if contacts:
+                return contacts[0].get("profile", {}).get("name", "")
+            return ""
+        except (IndexError, KeyError) as e:
+            logger.warning(f"Could not extract sender name: {e}")
+            return ""
+
+    async def _process_message_content(self, message_text: str, sender_id: str, sender_name: str) -> str:
+        """
+        Process message content using session management for proper user isolation
+
+        Args:
+            message_text: The message text from user
+            sender_id: User's WhatsApp ID
+            sender_name: User's name
+
+        Returns:
+            Response message text
+        """
+        try:
+            from app.services.session_service import session_manager
+
+            # Use session manager to handle the message with user context
+            result = await session_manager.handle_user_message(sender_id, sender_name, message_text)
+
+            logger.info(f"Session-managed response for {sender_id}: {result['response']['type']}")
+
+            return result['response']['message']
+
+        except Exception as e:
+            logger.error(f"Error processing message content: {e}")
+            return f"❌ Sorry, I encountered an error processing your request.\n\nReply *menu* to see search options."
 
     def is_message_webhook(self, data: Dict[str, Any]) -> bool:
         """

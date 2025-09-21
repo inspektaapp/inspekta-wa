@@ -25,12 +25,19 @@ class Settings(BaseSettings):
     WHATSAPP_APP_SECRET: str = "not_configured"
     TEST_NUMBER: str = "not_configured"
 
-    # Database Settings (optional for development)
-    DATABASE_URL: str = "sqlite:///./dev.db"
+    # Database Settings - Neon PostgreSQL
+    DATABASE_URL: str = "sqlite:///./dev.db"  # Will be overridden by .env
+    DB_ECHO: bool = False  # SQL query logging
 
-    # Redis & Celery Settings (optional for development)
-    REDIS_URL: str = "redis://localhost:6379/0"
-    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    # Redis Settings - Upstash Redis
+    REDIS_URL: str = "redis://localhost:6379/0"  # Will be overridden by .env
+    KV_URL: str = "not_configured"
+    KV_REST_API_URL: str = "not_configured"
+    KV_REST_API_TOKEN: str = "not_configured"
+    KV_REST_API_READ_ONLY_TOKEN: str = "not_configured"
+
+    # Celery Settings
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"  # Will use REDIS_URL
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
 
     # Inspector API Settings (optional for development)

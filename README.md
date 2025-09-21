@@ -2,39 +2,54 @@
 
 WhatsApp integration for the Inspector real estate platform using PyWa framework and FastAPI.
 
-## Quick Start
+## Getting Started
 
-### 1. Install Dependencies
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+* Python 3.8+
+* Docker
+* Docker Compose
+
+### Installing
+
+1. Clone the repository:
 
 ```bash
+git clone https://github.com/Bitsaac/Inspakta-wa.git
+cd Inspakta-wa
+```
+
+2. Create a virtual environment and install the dependencies:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+3. Set up the environment variables:
 
 ```bash
 cp .env.example .env
-# Edit .env with your actual values
 ```
 
-### 3. Run Development Server
+4. Run the development server:
 
 ```bash
-# Using uvicorn directly
 uvicorn app.main:app --reload --port 8000
-
-# Or using Python module
-python -m app.main
 ```
 
-### 4. Test the Setup
+## Running the project with Docker
 
-Visit these endpoints to verify everything is working:
+1. Build and run the containers:
 
-- **Health Check**: http://localhost:8000/api/v1/health/
-- **Detailed Health**: http://localhost:8000/api/v1/health/detailed
-- **API Documentation**: http://localhost:8000/docs
-- **Readiness Check**: http://localhost:8000/api/v1/health/ready
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+2. The application will be available at [http://localhost:8000](http://localhost:8000).
 
 ## Project Structure
 
