@@ -248,6 +248,25 @@ class SessionManager:
                 "message": "👋 Thanks for using INSPEKTA Property Search! Your session has ended.\n\nSend any message to start a new search."
             }
 
+        # Handle greetings with friendly response
+        if message_lower in ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'greetings', 'hola', 'howdy']:
+            session.go_to_main_menu()
+            from app.services.property_service import property_service
+            greeting_responses = [
+                f"👋 Hi there, {session.name}! Welcome to INSPEKTA Property Search!",
+                f"🏠 Hello {session.name}! Ready to find your perfect property?",
+                f"👋 Hey {session.name}! Let's find you an amazing property today!",
+                f"🌟 Hi {session.name}! Welcome back to INSPEKTA Property Search!"
+            ]
+            # Use a simple hash to get consistent but varied greetings per user
+            greeting_index = hash(session.user_id) % len(greeting_responses)
+            greeting = greeting_responses[greeting_index]
+
+            return {
+                "type": "greeting",
+                "message": f"{greeting}\n\n" + property_service.get_main_menu()
+            }
+
         # Handle based on current context
         if session.current_context == "main":
             return await self._handle_main_menu_enhanced(session, message)
